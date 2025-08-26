@@ -1,0 +1,78 @@
+name: Publish to NPM
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Node.js, Solana CLI, and Anchor
+        uses: heyAyushh/setup-anchor@v4.93
+        with:
+          use-avm: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.14.0"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Build Prod
+        run: |
+          anchor run build-gateway
+          mkdir -p prod/lib
+          mkdir -p prod/idl
+          cp target/deploy/gateway.so prod/lib/
+          cp target/idl/gateway.json prod/idl/gateway.json
+
+      - name: Build Dev
+        run: |
+          anchor run build-gateway-dev
+          mkdir -p dev/lib
+          mkdir -p dev/idl
+          cp target/deploy/gateway.so dev/lib/
+          cp target/idl/gateway.json dev/idl/gateway.json
+
+      - name: Create index.js
+        run: |
+          cat > index.js << EOF
+           module.exports = {
+            prod: {
+              programId: "ZETAjseVjuFsxdRxo6MmTCvqFwb3ZHUx56Co3vCmGis",
+              idl: require("./mainnet/idl/gateway.json")
+            },
+            dev: {
+              programId: "94U5AHQMKkV5txNJ17QPXWoh474PheGou6cNP2FEuL1d",
+              idl: require("./testnet/idl/gateway.json")
+            }
+          };
+          EOF
+
+      - name: Determine NPM Tag
+        id: determine-npm-tag
+        run: |
+          VERSION_TAG=${GITHUB_REF#refs/tags/v}
+          if [[ $VERSION_TAG == *"-"* ]]; then
+            echo ::set-output name=NPM_TAG::${VERSION_TAG#*-}
+          else
+            echo ::set-output name=NPM_TAG::latest
+          fi
+        env:
+          GITHUB_REF: ${{ github.ref }}
+
+      - name: Publish to NPM
+        run: |
+          yarn publish --access public --new-version ${GITHUB_REF#refs/tags/v} --tag ${{
+          steps.determine-npm-tag.outputs.NPM_TAG }} --no-git-tag-version
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_REF: ${{ github.ref }}

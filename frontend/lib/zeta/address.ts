@@ -1,0 +1,1 @@
+export const ZetaChainUniversalNFTAddress = "0xee715178E517C40e0Af28CA1AD4788806a38D7aE";

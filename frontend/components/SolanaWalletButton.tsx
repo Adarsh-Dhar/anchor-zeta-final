@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import {
@@ -12,6 +12,8 @@ import {
 
 export function WalletButton() {
   const { wallet, connected, disconnect, publicKey, connecting } = useWallet();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const { setVisible } = useWalletModal();
 
   const handleConnect = () => {
@@ -23,7 +25,7 @@ export function WalletButton() {
   };
 
   const getWalletIcon = () => {
-    if (wallet?.adapter?.icon) {
+    if (mounted && wallet?.adapter?.icon) {
       return (
         <img
           src={wallet.adapter.icon}
@@ -39,7 +41,7 @@ export function WalletButton() {
     if (connecting) {
       return "Connecting...";
     }
-    if (connected && publicKey) {
+    if (mounted && connected && publicKey) {
       const shortAddress = `${publicKey.toString().slice(0, 4)}...${publicKey.toString().slice(-4)}`;
       return shortAddress;
     }
@@ -50,7 +52,7 @@ export function WalletButton() {
     if (connecting) {
       return "Connecting to wallet...";
     }
-    if (connected && publicKey) {
+    if (mounted && connected && publicKey) {
       return `Connected: ${publicKey.toString()}`;
     }
     return "Devnet Only - Click to connect Solana wallet";
@@ -65,11 +67,9 @@ export function WalletButton() {
               onClick={connected ? handleDisconnect : handleConnect}
               disabled={connecting}
               className={`bg-black border border-gray-800 rounded-md flex items-center px-3 py-2 gap-2 transition-colors ${
-                connecting 
-                  ? 'opacity-50 cursor-not-allowed' 
-                  : connected 
-                    ? 'hover:bg-gray-900' 
-                    : 'hover:bg-gray-900'
+                connecting
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'hover:bg-gray-900'
               }`}
             >
               {getWalletIcon()}

@@ -6,6 +6,7 @@ import Button from "./ui/Button";
 
 const WagmiWalletButton = () => {
   const { address, isConnected } = useAccount();
+  const [mounted, setMounted] = useState(false);
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const [showConnectors, setShowConnectors] = useState(false);
@@ -13,6 +14,7 @@ const WagmiWalletButton = () => {
 
   // Close dropdown when clicking outside
   useEffect(() => {
+    setMounted(true);
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowConnectors(false);
@@ -50,7 +52,7 @@ const WagmiWalletButton = () => {
   };
 
   const getDisplayText = () => {
-    if (isConnected && address) {
+    if (mounted && isConnected && address) {
       const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
       return shortAddress;
     }

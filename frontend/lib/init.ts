@@ -1,9 +1,10 @@
-import { ZetaChainUniversalNFTClient, getZetaNFTWithSigner } from "./zeta";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// (removed unused imports from ./zeta)
 import { ZetaChainUniversalNFTAddress } from "./zeta/address";
 import { createZetaViemClient } from "./zeta/viem-client";
-import { UniversalNftClient, findConnectionPda, DEFAULT_PROGRAM_ID } from "./solana";
-import { Connection, PublicKey, Keypair } from "@solana/web3.js";
-import type { WalletClient, PublicClient, Account } from 'viem';
+import { DEFAULT_PROGRAM_ID, buildInitializeTransaction, buildV0Tx } from "./solana";
+import { Connection, PublicKey } from "@solana/web3.js";
+import type { WalletClient, PublicClient } from 'viem';
 
 export interface InitConfig {
   zetaRpcUrl: string;
@@ -211,86 +212,77 @@ export class ContractInitializer {
 
   async initializeSolana(wallet?: any): Promise<string> {
     try {
-      // Create connection
-      const connection = new Connection(this.config.solanaRpcUrl);
-      
-      // Create client
-      const client = new UniversalNftClient();
-      
-      // Use the provided wallet if available, otherwise generate a new keypair
-      let stateKeypair: Keypair;
-      let initialOwnerKeypair: Keypair;
-      
-      if (wallet && wallet.publicKey) {
-        // Use the connected Solana wallet
-        initialOwnerKeypair = wallet;
-        // Generate a new keypair for the state account
-        stateKeypair = Keypair.generate();
-      } else {
-        // Fallback to generating new keypairs (for testing purposes)
-        stateKeypair = Keypair.generate();
-        initialOwnerKeypair = Keypair.generate();
+      const connection = new Connection(this.config.solanaRpcUrl, { commitment: "confirmed" });
+      if (!wallet?.publicKey) {
+        throw new Error("Connect a Solana wallet first");
       }
-      
-      const stateAddress = stateKeypair.publicKey;
-      
-      // Build the initialize instruction
-      const initializeIx = client.buildInitializeIx({
-        state: stateAddress,
-        initialOwner: initialOwnerKeypair.publicKey,
+
+      // Build initialize instruction and state signer
+      const { instruction, signers, state } = buildInitializeTransaction({
+        programId: DEFAULT_PROGRAM_ID,
         name: "Universal NFT",
         symbol: "UNFT",
-        gateway: new PublicKey("11111111111111111111111111111111"), // Dummy gateway address
-        gasLimit: 1000000,
-        uniswapRouter: new PublicKey("11111111111111111111111111111111"), // Dummy router address
+        gateway: new PublicKey("11111111111111111111111111111111"),
+        gasLimit: BigInt(1000000),
+        uniswapRouter: new PublicKey("11111111111111111111111111111111"),
+        initialOwner: wallet.publicKey,
       });
-      
-      // Build and send the transaction
-            // Build and send the transaction
-            const { buildV0Tx } = await import("./solana");
 
-            if (wallet && wallet.publicKey) {
-              // Connected wallet pays fees and signs
-              const tx = await buildV0Tx(
-                connection,
-                wallet.publicKey,
-                [initializeIx],
-                [] // no local signers; wallet signs
-              );
-              const signed = await wallet.signTransaction(tx);
-              const signature = await connection.sendRawTransaction(signed.serialize());
-              await connection.confirmTransaction(signature, "confirmed");
-            } else {
-              // Local keypair path (dev only) - ensure it's funded
-              const bal = await connection.getBalance(initialOwnerKeypair.publicKey);
-              if (bal < 0.1 * 1e9) {
-                const airdropSig = await connection.requestAirdrop(initialOwnerKeypair.publicKey, 2 * 1e9);
-                await connection.confirmTransaction(airdropSig, "confirmed");
-              }
-              const transaction = await buildV0Tx(
-                connection,
-                initialOwnerKeypair.publicKey,
-                [initializeIx],
-                [initialOwnerKeypair] // only required signer
-              );
-              const signature = await connection.sendTransaction(transaction);
-              await connection.confirmTransaction(signature, "confirmed");
-            }
-      
-      // Verify the program state exists
-      const stateInfo = await client.fetchProgramState(connection, stateAddress);
-      if (!stateInfo) {
-        throw new Error("Solana program state not found after initialization");
+      // Build and partially sign tx (state signer included)
+      const tx = await buildV0Tx(connection, wallet.publicKey, [instruction], signers);
+
+      // Prefer signTransaction + sendRawTransaction for stability with v0
+      let signature: string | undefined;
+      try {
+        if (typeof wallet.signTransaction === "function") {
+          const signed = await wallet.signTransaction(tx);
+          signature = await connection.sendRawTransaction(signed.serialize(), { skipPreflight: false });
+        } else if (typeof wallet.signAndSendTransaction === "function") {
+          const res = await wallet.signAndSendTransaction(tx);
+          signature = res.signature;
+        } else if (typeof wallet.sendTransaction === "function") {
+          signature = await wallet.sendTransaction(tx, connection);
+        } else {
+          throw new Error("Unsupported wallet API: expected signTransaction, signAndSendTransaction or sendTransaction");
+        }
+      } catch (sendErr) {
+        // Try to surface program logs to help debug (e.g., fallback not found)
+        const anyErr = sendErr as any;
+        if (typeof anyErr?.getLogs === "function") {
+          try {
+            const logs = await anyErr.getLogs();
+            console.error("initializeSolana logs:", logs);
+          } catch {}
+        } else if (anyErr?.logs) {
+          console.error("initializeSolana logs:", anyErr.logs);
+        }
+        throw new Error(`Failed to send transaction: ${anyErr?.message || String(sendErr)}`);
       }
-      
-      // Find the connection PDA for ZetaChain
-      const chainId = this.config.zetaChainId || 7000; // Default ZetaChain testnet
-      const [connectionPda] = findConnectionPda(client.programId, BigInt(chainId));
-      
-      // Store the state address for future use
-      this.solanaStateAddress = stateAddress.toString();
-      
-      return `✅ Solana initialization completed (State: ${stateAddress.toString()})`;
+
+      if (!signature) throw new Error("Failed to obtain transaction signature");
+      try {
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+        await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, "confirmed");
+      } catch (confirmErr) {
+        // Fallback polling if confirmTransaction shape mismatches
+        try {
+          for (let i = 0; i < 30; i++) {
+            const statuses = await connection.getSignatureStatuses([signature]);
+            const status = statuses.value[0];
+            if (status && (status.confirmations === null || (status.confirmations ?? 0) > 0)) {
+              break;
+            }
+            await new Promise(r => setTimeout(r, 1000));
+          }
+        } catch (pollErr) {
+          throw new Error(`Confirmation failed: ${pollErr instanceof Error ? pollErr.message : String(pollErr)} (original: ${confirmErr instanceof Error ? confirmErr.message : String(confirmErr)})`);
+        }
+      }
+
+      // Save for later access
+      this.solanaStateAddress = state.toString();
+
+      return `✅ Solana initialize sent: ${signature} (State: ${state.toString()})`;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Unknown error";
       throw new Error(`Solana initialization failed: ${errorMsg}`);
@@ -346,7 +338,7 @@ export class ContractInitializer {
   // Test RPC connection before full initialization
   async testRpcConnection(): Promise<{ success: boolean; error?: string; details?: any }> {
     try {
-      const { getProvider } = await import("./zeta");
+      // (removed unused getProvider import)
       
       // Test ZetaChain RPC
       try {

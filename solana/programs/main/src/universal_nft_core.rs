@@ -12,7 +12,7 @@ use anchor_spl::{
 use mpl_token_metadata::types::DataV2;
 
 /// Initialize the Universal NFT program with all features
-pub fn initialize(
+pub fn _initialize(
     ctx: Context<Initialize>,
     name: String,
     symbol: String,
@@ -43,7 +43,7 @@ pub fn initialize(
 }
 
 /// Set the gateway address (only owner)
-pub fn set_gateway(ctx: Context<AdminOperation>, gateway_address: Pubkey) -> Result<()> {
+pub fn _set_gateway(ctx: Context<AdminOperation>, gateway_address: Pubkey) -> Result<()> {
     let state = &mut ctx.accounts.state;
     require!(!state.is_paused, ErrorCode::ContractPaused);
     
@@ -57,7 +57,7 @@ pub fn set_gateway(ctx: Context<AdminOperation>, gateway_address: Pubkey) -> Res
 }
 
 /// Set gas limit (only owner)
-pub fn set_gas_limit(ctx: Context<AdminOperation>, gas_limit: u64) -> Result<()> {
+pub fn _set_gas_limit(ctx: Context<AdminOperation>, gas_limit: u64) -> Result<()> {
     let state = &mut ctx.accounts.state;
     require!(!state.is_paused, ErrorCode::ContractPaused);
     require!(gas_limit > 0, ErrorCode::InvalidGasLimit);
@@ -72,7 +72,7 @@ pub fn set_gas_limit(ctx: Context<AdminOperation>, gas_limit: u64) -> Result<()>
 }
 
 /// Connect a chain (mapping equivalent)
-pub fn set_connected(
+pub fn _set_connected(
     ctx: Context<SetConnected>,
     chain_id: u64,
     contract_address: String,
@@ -95,7 +95,7 @@ pub fn set_connected(
 }
 
 /// Pause the contract (only owner)
-pub fn pause(ctx: Context<AdminOperation>) -> Result<()> {
+pub fn _pause(ctx: Context<AdminOperation>) -> Result<()> {
     let state = &mut ctx.accounts.state;
     require!(!state.is_paused, ErrorCode::AlreadyPaused);
     
@@ -109,7 +109,7 @@ pub fn pause(ctx: Context<AdminOperation>) -> Result<()> {
 }
 
 /// Unpause the contract (only owner)
-pub fn unpause(ctx: Context<AdminOperation>) -> Result<()> {
+pub fn _unpause(ctx: Context<AdminOperation>) -> Result<()> {
     let state = &mut ctx.accounts.state;
     require!(state.is_paused, ErrorCode::NotPaused);
     
@@ -123,7 +123,7 @@ pub fn unpause(ctx: Context<AdminOperation>) -> Result<()> {
 }
 
 /// Safe mint an NFT with auto-generated token ID
-pub fn safe_mint(
+pub fn _safe_mint(
     ctx: Context<SafeMint>,
     uri: String,
 ) -> Result<()> {
@@ -243,7 +243,7 @@ pub fn safe_mint(
 }
 
 /// Burn an NFT (owner or approved)
-pub fn burn_token(ctx: Context<BurnToken>, token_id: u64) -> Result<()> {
+pub fn _burn_token(ctx: Context<BurnToken>, token_id: u64) -> Result<()> {
     let state = &mut ctx.accounts.state;
     require!(!state.is_paused, ErrorCode::ContractPaused);
 
@@ -274,7 +274,7 @@ pub fn burn_token(ctx: Context<BurnToken>, token_id: u64) -> Result<()> {
 }
 
 /// Transfer NFT cross-chain
-pub fn transfer_cross_chain(
+pub fn _transfer_cross_chain(
     ctx: Context<TransferCrossChain>,
     token_id: u64,
     receiver: String, // Address on destination chain
@@ -334,7 +334,7 @@ pub fn transfer_cross_chain(
 }
 
 /// Handle incoming cross-chain transfer
-pub fn handle_cross_chain_receive(
+pub fn _handle_cross_chain_receive(
     ctx: Context<HandleCrossChainReceive>,
     token_id: u64,
     uri: String,
@@ -380,7 +380,7 @@ pub fn handle_cross_chain_receive(
 }
 
 /// Revert a failed cross-chain transfer
-pub fn revert_transfer(
+pub fn _revert_transfer(
     ctx: Context<RevertTransfer>,
     token_id: u64,
     original_owner: Pubkey,
@@ -415,7 +415,7 @@ pub fn revert_transfer(
 }
 
 /// Get token by owner and index (for enumeration)
-pub fn token_of_owner_by_index(
+pub fn _token_of_owner_by_index(
     ctx: Context<TokenQuery>,
     _owner: Pubkey,
     _index: u64,
@@ -426,12 +426,12 @@ pub fn token_of_owner_by_index(
 }
 
 /// Get total supply
-pub fn total_supply(ctx: Context<TokenQuery>) -> Result<u64> {
+pub fn _total_supply(ctx: Context<TokenQuery>) -> Result<u64> {
     Ok(ctx.accounts.state.total_supply)
 }
 
 /// Check if contract is paused
-pub fn is_paused(ctx: Context<TokenQuery>) -> Result<bool> {
+pub fn _is_paused(ctx: Context<TokenQuery>) -> Result<bool> {
     Ok(ctx.accounts.state.is_paused)
 }
 

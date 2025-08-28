@@ -15,13 +15,13 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-main = "11111111111111111111111111111112"
+main = "C4KbLZG5ZZmK3QabqAHhev3YV4NMM5iDtufJgjRZQCTq"
 connected = "4xEw862A2SEwMjofPkUyd4NEekmVJKJsdHkK3UkAtDrc"
 connected_spl = "8iUjRRhUCn8BjrvsWPfj8mguTe9L81ES4oAUApiF8JFC"
 gateway = "ZETAjseVjuFsxdRxo6MmTCvqFwb3ZHUx56Co3vCmGis"
 
 [programs.devnet]
-main = "6vQYZxfQLriD2J3P3AJpgVPMvUZ4w6c2c5AK7Sy6sjoU"
+main = "C4KbLZG5ZZmK3QabqAHhev3YV4NMM5iDtufJgjRZQCTq"
 connected = "4xEw862A2SEwMjofPkUyd4NEekmVJKJsdHkK3UkAtDrc"
 connected_spl = "8iUjRRhUCn8BjrvsWPfj8mguTe9L81ES4oAUApiF8JFC"
 gateway = "ZETAjseVjuFsxdRxo6MmTCvqFwb3ZHUx56Co3vCmGis"

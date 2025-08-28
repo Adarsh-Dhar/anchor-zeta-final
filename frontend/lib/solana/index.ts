@@ -2,21 +2,19 @@ import { PublicKey, TransactionInstruction, SystemProgram, SYSVAR_RENT_PUBKEY, T
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 // Metaplex Token Metadata program id (constant)
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
-import SHA256 from "crypto-js/sha256";
-import Hex from "crypto-js/enc-hex";
+import { sha256 } from "@noble/hashes/sha256";
+import { utf8ToBytes } from "@noble/hashes/utils";
 
 // Program IDs
-export const DEFAULT_PROGRAM_ID = new PublicKey("6vQYZxfQLriD2J3P3AJpgVPMvUZ4w6c2c5AK7Sy6sjoU");
+export const DEFAULT_PROGRAM_ID = new PublicKey("C4KbLZG5ZZmK3QabqAHhev3YV4NMM5iDtufJgjRZQCTq");
 
 // Utilities
 const textEncoder = new TextEncoder();
 
 function anchorDiscriminator(ixName: string): Buffer {
   const preimage = `global:${ixName}`;
-  const hash = SHA256(preimage);
-  const hex = hash.toString(Hex);
-  const bytes = Buffer.from(hex.slice(0, 16), "hex");
-  return bytes.slice(0, 8);
+  const digest = sha256(utf8ToBytes(preimage));
+  return Buffer.from(digest).slice(0, 8);
 }
 
 // Borsh-like serialization helpers for Anchor (strings as u32 length + utf8 bytes, little-endian numbers)
@@ -90,8 +88,8 @@ export function findMasterEditionPda(mint: PublicKey) {
 
 // Account decoding (ProgramState and EnumerableData) for read helpers
 // Anchor account layout: 8-byte discriminator then fields
-const PROGRAM_STATE_DISCRIMINATOR = Buffer.from(SHA256("account:ProgramState").toString(Hex), "hex").slice(0, 8);
-const ENUMERABLE_DATA_DISCRIMINATOR = Buffer.from(SHA256("account:EnumerableData").toString(Hex), "hex").slice(0, 8);
+const PROGRAM_STATE_DISCRIMINATOR = Buffer.from(sha256(utf8ToBytes("account:ProgramState"))).slice(0, 8);
+const ENUMERABLE_DATA_DISCRIMINATOR = Buffer.from(sha256(utf8ToBytes("account:EnumerableData"))).slice(0, 8);
 
 export type ProgramState = {
   authority: PublicKey;
@@ -157,7 +155,7 @@ export class UniversalNftClient {
     ]);
 
     const keys = [
-      { pubkey: args.state, isSigner: false, isWritable: true },
+      { pubkey: args.state, isSigner: true, isWritable: true },
       { pubkey: args.initialOwner, isSigner: true, isWritable: true },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ];
@@ -412,6 +410,30 @@ export async function buildSafeMintTransaction(opts: {
   });
 
   return { instruction: ix, signers: [mintKp], addresses: { mint, tokenAccount, nftDataPda, enumerablePda, metadata, masterEdition, nftOriginPda, nextTokenId } };
+}
+
+export function buildInitializeTransaction(opts: {
+  programId?: PublicKey;
+  name: string;
+  symbol: string;
+  gateway: PublicKey;
+  gasLimit: bigint | number;
+  uniswapRouter: PublicKey;
+  initialOwner: PublicKey;
+}): { instruction: TransactionInstruction; signers: Keypair[]; state: PublicKey } {
+  const programId = opts.programId ?? DEFAULT_PROGRAM_ID;
+  const client = new UniversalNftClient(programId);
+  const stateKp = Keypair.generate();
+  const ix = client.buildInitializeIx({
+    state: stateKp.publicKey,
+    initialOwner: opts.initialOwner,
+    name: opts.name,
+    symbol: opts.symbol,
+    gateway: opts.gateway,
+    gasLimit: opts.gasLimit,
+    uniswapRouter: opts.uniswapRouter,
+  });
+  return { instruction: ix, signers: [stateKp], state: stateKp.publicKey };
 }
 
 export function buildBurnTransaction(args: { programId?: PublicKey; state: PublicKey; authority: PublicKey; tokenId: bigint; mint: PublicKey }): { instruction: TransactionInstruction; tokenAccount: PublicKey; nftDataPda: PublicKey } {

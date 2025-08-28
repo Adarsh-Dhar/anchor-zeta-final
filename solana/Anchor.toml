@@ -5,6 +5,7 @@ solana_version = "2.1.0"
 [workspace]
 members = [
   "programs/gateway",
+  "programs/main",
   "programs/examples/connected",
   "programs/examples/connectedSPL"
 ]
@@ -14,6 +15,13 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
+main = "11111111111111111111111111111112"
+connected = "4xEw862A2SEwMjofPkUyd4NEekmVJKJsdHkK3UkAtDrc"
+connected_spl = "8iUjRRhUCn8BjrvsWPfj8mguTe9L81ES4oAUApiF8JFC"
+gateway = "ZETAjseVjuFsxdRxo6MmTCvqFwb3ZHUx56Co3vCmGis"
+
+[programs.devnet]
+main = "6vQYZxfQLriD2J3P3AJpgVPMvUZ4w6c2c5AK7Sy6sjoU"
 connected = "4xEw862A2SEwMjofPkUyd4NEekmVJKJsdHkK3UkAtDrc"
 connected_spl = "8iUjRRhUCn8BjrvsWPfj8mguTe9L81ES4oAUApiF8JFC"
 gateway = "ZETAjseVjuFsxdRxo6MmTCvqFwb3ZHUx56Co3vCmGis"
@@ -22,7 +30,7 @@ gateway = "ZETAjseVjuFsxdRxo6MmTCvqFwb3ZHUx56Co3vCmGis"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
@@ -31,3 +39,4 @@ build-gateway-dev = "anchor build --program-name gateway -- --features dev"
 build-gateway = "anchor build --program-name gateway"
 build-gateway-dev-upgrade-test = "anchor build --program-name gateway -- --features dev --features upgrade-test && mv target/deploy/gateway.so target/deploy/gateway_upgrade.so"
 build-examples = "anchor build --program-name connected && anchor build --program-name connected_spl"
+build-main = "anchor build --program-name main"

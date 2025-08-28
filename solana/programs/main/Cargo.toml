@@ -1,12 +1,12 @@
 [package]
-name = "connected"
+name = "main"
 version = "0.1.0"
-description = "Test program used for testing withdraw and call feature"
+description = "Universal NFT program with cross-chain capabilities"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "connected"
+name = "main"
 
 [features]
 default = []
@@ -19,6 +19,7 @@ dev = ["gateway/dev"]
 
 [dependencies]
 anchor-lang = { version = "=0.31.1" }
-anchor-spl = { version = "=0.31.1" }
+anchor-spl = { version = "=0.31.1", features = ["metadata"] }
+mpl-token-metadata = "5.1.1"
 spl-associated-token-account = { version = "6.0.0", features = ["no-entrypoint"] }
-gateway = { path = "../../gateway", features = ["no-entrypoint", "cpi"] }
+gateway = { path = "../gateway", features = ["no-entrypoint", "cpi"] }

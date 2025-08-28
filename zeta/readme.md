@@ -1,43 +1,66 @@
-# Example ZetaChain contracts
+## Foundry
 
-> Please, note that code from this repository is referenced in [the
-> documentation](https://github.com/zeta-chain/docs). When making changes to the
-> code especially when moving files, make sure to update the documentation as
-> well.
+**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
 
-## Overview
+Foundry consists of:
 
-Welcome to the ZetaChain example contracts repository! This collection of smart
-contract projects is written using Hardhat and Solidity, specifically for the
-ZetaChain blockchain. Each project showcases different functionalities and use
-cases that can be implemented on the ZetaChain platform.
+-   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
+-   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
+-   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
+-   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
 
-### Universal Apps
+## Documentation
 
-The `examples` directory contains the latest universal omnichain example
-contracts. A universal app is a smart contract on ZetaChain that is natively
-connected to other blockchains like Ethereum, BNB and Bitcoin. These contracts
-use the latest gateway architecture and are compatible with localnet. Learn more
-about [universal apps in the
-docs](https://www.zetachain.com/docs/start/app/).
+https://book.getfoundry.sh/
 
-## Tutorials
+## Usage
 
-If you are new to ZetaChain and would like to learn how to use these example
-contracts, check out [the Tutorial section in the
-docs](https://www.zetachain.com/docs/developers/tutorials/hello/). These
-tutorials provide step-by-step instructions on setting up your development
-environment, deploying contracts, and interacting with the ZetaChain network.
+### Build
 
-## Contributing
+```shell
+$ forge build
+```
 
-Contributions to this repository are welcome! If you have an example project or
-an improvement to an existing one, please fork the repository, create a new
-branch, make your changes, and submit a pull request.
+### Test
 
-## Disclaimer
+```shell
+$ forge test
+```
 
-These example projects are provided for educational purposes only. They are not
-intended for use in production environments without thorough review, security
-audits, and customization to meet specific requirements. Use them at your own
-risk.
+### Format
+
+```shell
+$ forge fmt
+```
+
+### Gas Snapshots
+
+```shell
+$ forge snapshot
+```
+
+### Anvil
+
+```shell
+$ anvil
+```
+
+### Deploy
+
+```shell
+$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+```
+
+### Cast
+
+```shell
+$ cast <subcommand>
+```
+
+### Help
+
+```shell
+$ forge --help
+$ anvil --help
+$ cast --help
+```
